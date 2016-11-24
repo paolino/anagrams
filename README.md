@@ -1,5 +1,8 @@
 # anagrams
 
+```
+stack build
 stack exec anagrams
+```
 
-is waiting for phrases to be anagrammed
+The opened console will be waiting for phrases to be *anagrammed*
