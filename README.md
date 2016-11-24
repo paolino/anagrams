@@ -1,4 +1,4 @@
-# anagrams
+# Trie based anagrams in haskell 
 
 ```
 stack build
