@@ -29,6 +29,6 @@ searchI t = do
   forever $ do
       putStr "> " >> hFlush stdout
       l <- mkOcc <$> map toLower <$> filter isLetter <$> getLine
-      mapM putStrLn . (map $ intercalate " ") . completeSearch t [] $ l
+      mapM putStrLn . (map $ intercalate " ") . iterateSearch t [] $ l
 
 main =  english >>= searchI
