@@ -1,11 +1,11 @@
-import Data.Map (Map)
 import Data.Char
 import qualified Data.Map as M
-import Data.List (foldl', tails,sort,intercalate )
--- import Control.Lens
+import Data.List (foldl', sort,intercalate )
 import System.IO
 import Control.Monad
 import Control.Arrow (second)
+
+import Trie
 
 consume xs = let
   ys = sort $ xs
@@ -16,34 +16,12 @@ consume xs = let
   consume' ys (x:xs) = (x,ys ++ xs) : skip (x:ys) x xs
   in consume' [] xs
 
-data T a = T Bool (Map a (T a)) | L deriving Show
 
-insert :: Ord a => [a] -> T a -> T a
-insert [] L = L
-insert [] (T _ m) = T True m
-insert (x:xs) L = T False $ M.singleton x $ insert xs L
-insert (x:xs) (T b m) = T b $ M.insertWith merge x (insert xs L) m
-
-merge L L = L
-merge (T _ m) L = T True m
-merge L (T _ m) = T True m
-merge (T b m) (T b' m') = T (b || b') $ M.unionWith merge m' m
-
-retrieve L = [[]]
-retrieve (T b m) = (if b then ([]:) else id) $ do
-  (x,r) <- M.assocs m
-  rs <- retrieve r
-  return $ x:rs
-
-prefix [] t = Just t
-prefix xs L = Nothing
-prefix (x:xs) (T b m) = M.lookup x m >>= prefix xs
-
-search :: Ord a => T a -> [a] -> [a] -> [([a],[a])]
+search :: Ord a => Trie a -> [a] -> [a] -> [([a],[a])]
 search L _ xs = return $ (xs,[])
-search (T False m) _ [] = []
-search (T True m) _ [] = return ([],[])
-search (T b m) zs xs = (if b then ((xs,[]):) else id) $ do
+search (Trie False m) _ [] = []
+search (Trie True m) _ [] = return ([],[])
+search (Trie b m) zs xs = (if b then ((xs,[]):) else id) $ do
   (x,ys) <- consume xs
   let (c,zs') = case zs of
                   [] -> (True,[])
@@ -58,7 +36,7 @@ search (T b m) zs xs = (if b then ((xs,[]):) else id) $ do
       Just t -> map (second (x:)) $ search t zs' ys
     else []
 
-deepsearch :: Ord a => T a -> [a] -> [a] -> [[[a]]]
+deepsearch :: Ord a => Trie a -> [a] -> [a] -> [[[a]]]
 deepsearch t _ [] = []
 deepsearch t zs xs = do
   (rs,ys) <- search t zs xs
