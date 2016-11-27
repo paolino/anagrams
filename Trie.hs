@@ -1,35 +1,34 @@
-{-# language ViewPatterns, ImplicitParams #-}
+{-# language ViewPatterns, ImplicitParams, NoMonomorphismRestriction #-}
 -- | Trie implementation with lexicographically lower path bounded searches
 
 module Trie where
 
 import Data.Map (Map)
-import qualified Data.Map as M
+import qualified Data.Map.Strict as M
 import Control.Arrow (second)
 import Control.Monad (guard)
 
 
 -- | A trie holds information in the indexing of children
 -- The Bool value indicate a node is also terminal
-data Trie a = Trie Bool (Map a (Trie a)) -- ^ a node
+data Trie a = Trie !Bool !(Map a (Trie a)) -- ^ a node
             | L  -- ^ an end of path
+
+instance (Ord a) => Monoid (Trie a) where
+  mempty = L
+  mappend L L = L
+  mappend (Trie _ m) L = Trie True m -- one was terminal (L)
+  mappend L (Trie _ m) = Trie True m
+  mappend (Trie b m) (Trie b' m') = Trie (b || b') $ M.unionWith mappend m' m
 
 -- | a path down a trie
 type Path a = [a]
--- insertion --------------------
---
--- | insert a path
-insert :: Ord a => Path a -> Trie a -> Trie a
-insert [] L = L
-insert [] (Trie _ m) = Trie True m -- set the node as terminal
-insert (x:xs) L = Trie False $ M.singleton x $ insert xs L
-insert (x:xs) (Trie b m) = Trie b $ M.insertWith merge x (insert xs L) m
 
--- | merge 2 tries
-merge L L = L
-merge (Trie _ m) L = Trie True m -- one was terminal (L)
-merge L (Trie _ m) = Trie True m
-merge (Trie b m) (Trie b' m') = Trie (b || b') $ M.unionWith merge m' m
+mkPath :: Ord a => Path a -> Trie a
+mkPath = foldr f mempty where
+  f x t = Trie False $ M.singleton x t
+
+mkTrie = mconcat . map mkPath
 
 
 -- searching library ----------------------
